@@ -24,13 +24,13 @@ jobs:
         bash ci_build_ios.bash
 
     - name: Upload modules release output
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: lwjgl3-ios-modules
         path: bin/RELEASE
 
     - name: Upload native build output
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: lwjgl3-ios-natives
         path: bin/out
