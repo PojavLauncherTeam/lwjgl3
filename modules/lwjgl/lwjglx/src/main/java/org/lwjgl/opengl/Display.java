@@ -305,7 +305,7 @@ public class Display {
         Window.cursorPosCallback = new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double xpos, double ypos) {
-                GLFWInputImplementation.singleton.putMouseEventWithCoords((byte)-1, (byte)0,(int)xpos,(int)((ypos - Display.getHeight())*-1),0,Sys.getNanoTime());
+                GLFWInputImplementation.singleton.putMouseEventWithCoords((byte)-1, (byte)0,(int)xpos,(int)ypos,0,Sys.getNanoTime());
             }
         };
 
