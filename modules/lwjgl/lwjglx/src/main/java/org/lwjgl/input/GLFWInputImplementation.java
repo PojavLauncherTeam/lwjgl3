@@ -16,14 +16,10 @@ public class GLFWInputImplementation implements InputImplementation {
     private final ByteBuffer keyboardEvent = ByteBuffer.allocate(Keyboard.EVENT_SIZE);
     public final byte[] key_down_buffer = new byte[Keyboard.KEYBOARD_SIZE];
     public final byte[] mouse_buffer = new byte[3];
-    public int mouseX = 0;
-    public int mouseY = 0;
-    public int mouseLastEventX = 0;
-    public int mouseLastEventY = 0;
+    public int mouseX = 0, lastPhysicalX = 0;
+    public int mouseY = 0, lastPhysicalY = 0;
     public int mouseLastX = 0;
     public int mouseLastY = 0;
-    public int mouseComparatorX;
-    public int mouseComparatorY;
     public boolean grab;
     private long last_event_nanos = System.nanoTime();
     @Override
@@ -140,23 +136,27 @@ public class GLFWInputImplementation implements InputImplementation {
         return true;
     }
 
-    public void putMouseEventWithCoords(byte button, byte state, int coord1, int coord2, int dz, long nanos) {
-        int acoord1=0;
-        int acoord2=0;
-        if(coord1 == -1 && coord2 == -1) {
-            acoord1 = mouseX;
-            acoord2 = mouseY;
-        }else{
-            acoord1 = coord1;
-            acoord2= coord2;
+    public void putMouseEventWithCoords(byte button, byte state, int px, int py, int dz, long nanos) {
+        if(px == -1 && py == -1) {
+            px = lastPhysicalX;
+            py = lastPhysicalY;
         }
         event_buffer.clear();
         event_buffer.put(button).put(state);
         //always put deltas when grabbed
         if (grab) {
-            event_buffer.putInt(acoord1-mouseX).putInt(acoord2-mouseY);
+            int dx = px - lastPhysicalX;
+            // The coordinate from GLFW is inverted relative to LWJGL2's input, so
+            // invert the delta here for more consitency between resolution changes
+            int dy = (py - lastPhysicalY) * -1;
+            mouseX += dx;
+            mouseY += dy;
+            event_buffer.putInt(dx).putInt(dy);
         }else{
-            event_buffer.putInt(acoord1).putInt(acoord2);
+            mouseX = px;
+            // If not grabbing, invert absolute coordinate in the window's coordinate space
+            mouseY = (int)((py - Display.getHeight())*-1);
+            event_buffer.putInt(mouseX).putInt(mouseY);
         }
         if(button != -1) {
             mouse_buffer[button]=state;
@@ -165,8 +165,8 @@ public class GLFWInputImplementation implements InputImplementation {
         event_buffer.flip();
         event_queue.putEvent(event_buffer);
         last_event_nanos = nanos;
-        mouseX = acoord1;
-        mouseY = acoord2;
+        lastPhysicalX = px;
+        lastPhysicalY = py;
     }
 
     public void setMouseButtonInGrabMode(byte button, byte state) {
